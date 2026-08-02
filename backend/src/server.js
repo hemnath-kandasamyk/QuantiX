@@ -6,7 +6,6 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const { sequelize } = require('./models');
 const scheduleAlertJob = require('./utils/alertJob');
-
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const salesRoutes = require('./routes/sales');
@@ -51,7 +50,25 @@ const authLimiter = rateLimit({
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register-shop', authLimiter);
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+// Single, real health check — verifies DB connectivity too.
+app.get('/api/health', async (req, res) => {
+  try {
+    await sequelize.authenticate();
+    res.status(200).json({
+      status: 'healthy',
+      database: 'connected',
+      environment: process.env.NODE_ENV,
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'unhealthy',
+      database: 'disconnected',
+      error: error.message,
+    });
+  }
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -61,6 +78,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/ai', aiRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'Route not found' }));
+
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ error: isProd ? 'Internal server error' : err.message });
