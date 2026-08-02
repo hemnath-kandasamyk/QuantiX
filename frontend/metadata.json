@@ -1,0 +1,6 @@
+{
+  "name": "QuantiX - Shop Management & Billing",
+  "description": "QuantiX shop management application featuring real-time inventory, POS billing, sales history, staff management, alerts, AI assistant, and Google authentication.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
