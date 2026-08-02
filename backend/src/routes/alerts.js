@@ -54,4 +54,24 @@ router.get('/', async (req, res) => {
   });
 });
 
+// POST /api/alerts/read-all
+// NOTE: alerts here are computed on the fly from live product/inventory
+// data (see GET / above) — there's no Alert table to mark as "read".
+// This route exists so the frontend's "mark all read" button has a real
+// endpoint to call instead of 404ing. If you want alerts to actually stay
+// dismissed across page loads/devices, you'd add an AlertRead model
+// (retailerId, productId, alertType, readAt) and check against it in GET /.
+router.post('/read-all', async (req, res) => {
+  res.json({ success: true });
+});
+
+// DELETE /api/alerts/:id
+// Same caveat as above: since alerts aren't persisted rows, this can't
+// really "delete" one. It just acknowledges the dismissal so the frontend
+// can remove it from the current view. It will reappear on next refresh
+// until the AlertRead-style tracking described above is built.
+router.delete('/:id', async (req, res) => {
+  res.json({ success: true, id: req.params.id });
+});
+
 module.exports = router;
