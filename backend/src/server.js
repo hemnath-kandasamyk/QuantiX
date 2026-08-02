@@ -22,7 +22,12 @@ if (isProd && (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'dev-secret
 }
 
 // Comma-separated list, e.g. FRONTEND_URL=https://quantix.vercel.app,https://www.quantix.app
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://quanti-x.vercel.app",
+  "https://quanti-x-git-main-quanti-x1.vercel.app"
+];
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
