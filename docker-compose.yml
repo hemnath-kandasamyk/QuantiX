@@ -1,0 +1,49 @@
+version: '3.8'
+
+# Optional: run the whole stack with Postgres, the same way it'll run in
+# production. For everyday coding, `npm run dev` in each folder with the
+# default sqlite is still faster — reach for this when you want to test
+# against Postgres before deploying, or want one-command onboarding.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: quantix
+      POSTGRES_PASSWORD: quantix
+      POSTGRES_DB: quantix
+    ports:
+      - '5432:5432'
+    volumes:
+      - quantix_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U quantix']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-a-real-env-file}
+      DATABASE_URL: postgres://quantix:quantix@postgres:5432/quantix
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - '4000:4000'
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:4000/api
+    depends_on:
+      - backend
+    ports:
+      - '3000:3000'
+
+volumes:
+  quantix_pg_data:

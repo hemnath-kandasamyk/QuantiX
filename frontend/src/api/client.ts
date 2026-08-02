@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+// In dev, '/api' is proxied to the backend by vite.config.ts, so a relative
+// path just works. In production, the frontend is often deployed to a
+// different origin than the backend (e.g. Vercel + Render) — set
+// VITE_API_URL at build time to point at the deployed backend, e.g.
+// VITE_API_URL=https://quantix-api.onrender.com/api
+const baseURL = import.meta.env.VITE_API_URL || '/api';
+
 const client = axios.create({
-  baseURL: '/api',
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
   },

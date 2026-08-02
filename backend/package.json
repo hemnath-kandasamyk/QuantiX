@@ -4,19 +4,39 @@
   "description": "Inventory and Billing Management backend for small retailers",
   "main": "src/server.js",
   "type": "commonjs",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "seed": "node src/utils/seed.js"
+    "seed": "node src/utils/seed.js",
+    "db:migrate": "sequelize-cli db:migrate",
+    "db:migrate:undo": "sequelize-cli db:migrate:undo",
+    "test": "jest"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^7.4.1",
+    "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
     "node-cron": "^3.0.3",
+    "pg": "^8.13.0",
+    "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.3",
+    "sequelize-cli": "^6.6.2",
     "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/**/*.test.js"]
   }
 }
