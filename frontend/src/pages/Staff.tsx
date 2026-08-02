@@ -43,7 +43,7 @@ export const Staff: React.FC = () => {
   const fetchStaff = async () => {
     setLoading(true);
     try {
-      const res = await client.get('/staff');
+      const res = await client.get('/auth/staff');
       setStaff(res.data);
     } catch {
       showToast('Error', 'Failed to fetch staff directory.', 'error');
@@ -64,7 +64,7 @@ export const Staff: React.FC = () => {
     }
 
     try {
-      const res = await client.post('/staff', formData);
+      const res = await client.post('/auth/staff', formData);
       setStaff((prev) => [...prev, res.data]);
       showToast('Staff Member Added', `Registered ${formData.name} in store directory.`);
       setIsAddModalOpen(false);
@@ -77,7 +77,7 @@ export const Staff: React.FC = () => {
   const handleDeleteStaff = async (id: string, name: string) => {
     if (!window.confirm(`Are you sure you want to revoke access for ${name}?`)) return;
     try {
-      await client.delete(`/staff/${id}`);
+      await client.delete(`/auth/staff/${id}`);
       setStaff((prev) => prev.filter((s) => s.id !== id));
       showToast('Access Revoked', `Removed ${name} from staff directory.`);
     } catch {
