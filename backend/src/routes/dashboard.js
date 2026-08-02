@@ -42,6 +42,107 @@ function summarize(sales) {
 
 function round2(n) { return Math.round(n * 100) / 100; }
 
+// GET /api/dashboard  (root)
+// The frontend's Dashboard page expects one combined payload rather than
+// calling /summary, /trend, /staff-performance separately. This assembles
+// that shape from the same data those routes use.
+//
+// NOTE on approximated fields: the Sale/Product models don't currently
+// store receiptNo, customerName, paymentMethod, sku, or unit — those
+// columns don't exist yet. Below they're filled with reasonable
+// placeholders (e.g. paymentMethod falls back to the real `paymentMode`
+// field, receiptNo is synthesized from the sale id). If you want these to
+// be real, add the columns to the Sale/Product models + a migration.
+router.get('/', async (req, res) => {
+  const retailerId = req.user.retailerId;
+  const now = new Date();
+  const since30 = new Date();
+  since30.setDate(now.getDate() - 29);
+  since30.setHours(0, 0, 0, 0);
+
+  const [monthSales, thirtyDaySales, products] = await Promise.all([
+    salesSince(retailerId, startOfMonth(now)),
+    salesSince(retailerId, since30),
+    Product.findAll({ where: { retailerId, isActive: true }, include: [{ model: Inventory }] }),
+  ]);
+
+  const monthSummary = summarize(monthSales);
+
+  // Previous month, for the "change" percentages.
+  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonthEnd = startOfMonth(now);
+  const prevMonthSales = await Sale.findAll({
+    where: { retailerId, createdAt: { [Op.gte]: prevMonthStart, [Op.lt]: prevMonthEnd } },
+    include: [{ model: SaleItem, as: 'items', include: [Product] }],
+  });
+  const prevSummary = summarize(prevMonthSales);
+  const pctChange = (curr, prev) => (prev === 0 ? (curr > 0 ? 100 : 0) : round2(((curr - prev) / prev) * 100));
+
+  // Revenue series for the last 30 days.
+  const byDay = {};
+  for (const sale of thirtyDaySales) {
+    const key = new Date(sale.createdAt).toISOString().slice(0, 10);
+    if (!byDay[key]) byDay[key] = { revenue: 0, transactions: 0 };
+    byDay[key].revenue += sale.totalAmount;
+    byDay[key].transactions += 1;
+  }
+  const revenueData = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    revenueData.push({
+      date: key,
+      revenue: round2(byDay[key]?.revenue || 0),
+      transactions: byDay[key]?.transactions || 0,
+    });
+  }
+
+  const lowStockCount = products.filter((p) => {
+    const qty = p.Inventory ? p.Inventory.currentQuantity : 0;
+    return qty <= p.lowStockThreshold;
+  }).length;
+
+  const topProducts = monthSummary.topProducts.map((tp) => {
+    const product = products.find((p) => p.name === tp.name);
+    return {
+      name: tp.name,
+      salesCount: tp.unitsSold,
+      revenue: tp.revenue,
+      stock: product?.Inventory ? product.Inventory.currentQuantity : 0,
+      unit: 'pcs', // placeholder — no unit column on Product yet
+    };
+  });
+
+  const recentSalesRaw = [...monthSales]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 10);
+  const recentTransactions = recentSalesRaw.map((sale) => ({
+    id: String(sale.id),
+    receiptNo: `INV-${String(sale.id).padStart(5, '0')}`, // placeholder — no receiptNo column yet
+    customerName: 'Walk-in Customer', // placeholder — no customerName column yet
+    total: round2(sale.totalAmount),
+    paymentMethod: sale.paymentMode,
+    timestamp: sale.createdAt,
+    items: sale.items.map((i) => ({
+      productName: i.Product ? i.Product.name : `Product #${i.productId}`,
+      quantity: i.quantitySold,
+    })),
+  }));
+
+  res.json({
+    totalRevenue: monthSummary.revenue,
+    totalSales: monthSummary.transactions,
+    totalProducts: products.length,
+    lowStockCount,
+    revenueChange: pctChange(monthSummary.revenue, prevSummary.revenue),
+    salesChange: pctChange(monthSummary.transactions, prevSummary.transactions),
+    revenueData,
+    topProducts,
+    recentTransactions,
+  });
+});
+
 // GET /api/dashboard/summary
 // Returns today / this month / this year rollups plus top products.
 router.get('/summary', async (req, res) => {
