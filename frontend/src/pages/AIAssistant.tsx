@@ -58,8 +58,8 @@ export const AIAssistant: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await client.post('/ai/chat', { message: textToSend });
-      const aiReply = res.data.reply;
+      const res = await client.post('/ai/ask', { question: textToSend });
+      const aiReply = res.data.answer;
 
       const aiMsg: ChatMessage = {
         id: 'ai_' + Date.now(),
