@@ -4,10 +4,18 @@ const path = require('path');
 // Used by both sequelize-cli (migrations/seeders) and src/config/database.js
 // (the app's runtime connection), so schema and app always agree.
 //
+// Folder structure assumed:
+//   backend/
+//     data/                     <- SQLite file lives here (dev/test)
+//     database/
+//       config/
+//         config.js              <- this file
+//
 // - development / test: local SQLite file, zero setup required.
 // - production: Postgres via a single DATABASE_URL (this is what Render,
 //   Railway, Heroku, Supabase, etc. all give you when you provision a
 //   Postgres database — just paste it into your platform's env vars).
+
 if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
   console.error(
     'FATAL: DATABASE_URL is not set. In production this must be your ' +
@@ -20,6 +28,10 @@ if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
 module.exports = {
   development: {
     dialect: 'sqlite',
+    // __dirname = backend/database/config
+    // '..'      -> backend/database
+    // '..'      -> backend
+    // then      -> backend/data/retail.sqlite
     storage: path.resolve(__dirname, '..', '..', 'data', 'retail.sqlite'),
     logging: false,
   },
