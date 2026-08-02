@@ -107,4 +107,78 @@ router.get('/me', authenticate, async (req, res) => {
   res.json({ user: req.user });
 });
 
+// DELETE /api/auth/staff/:id - admin-only: remove a staff login.
+// Guards against removing the wrong retailer's user, and against an
+// admin accidentally deleting their own account through this route.
+router.delete('/staff/:id', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const staff = await User.findOne({
+      where: { id: req.params.id, retailerId: req.user.retailerId },
+    });
+    if (!staff) return res.status(404).json({ error: 'Staff member not found' });
+    if (staff.id === req.user.userId) {
+      return res.status(400).json({ error: 'You cannot remove your own account' });
+    }
+    await staff.destroy();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/auth/google
+// Firebase has already verified the user's identity client-side (that's
+// what produced idToken/email/name). We trust that email here rather than
+// re-verifying the token server-side, since this project doesn't run the
+// firebase-admin SDK. If you later add server-side verification, this is
+// the route to harden first.
+// - Existing email -> logs that user in.
+// - New email -> creates a brand-new shop (shopName defaults from their
+//   Google display name; they can rename it later from Settings).
+router.post('/google', async (req, res) => {
+  try {
+    const { email, name } = req.body;
+    if (!email) return res.status(400).json({ error: 'email is required' });
+
+    let user = await User.findOne({ where: { email } });
+    let retailer;
+
+    if (user) {
+      retailer = await Retailer.findByPk(user.retailerId);
+    } else {
+      const shopName = name ? `${name}'s Shop` : 'My Shop';
+      const randomPassword = await bcrypt.hash(email + Date.now(), 10);
+
+      retailer = await Retailer.create({
+        shopName,
+        email,
+        passwordHash: randomPassword,
+      });
+      user = await User.create({
+        retailerId: retailer.id,
+        name: name || shopName,
+        email,
+        passwordHash: randomPassword,
+        role: 'admin',
+      });
+    }
+
+    const token = signToken(user);
+    res.json({
+      token,
+      user: { id: user.id, name: user.name, role: user.role, retailerId: user.retailerId, shopName: retailer.shopName },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/auth/logout
+// JWTs are stateless, so there's nothing to invalidate server-side yet.
+// This exists so the frontend has a real endpoint to call (and a place to
+// add token/session revocation later, e.g. a denylist table).
+router.post('/logout', authenticate, async (req, res) => {
+  res.json({ success: true });
+});
+
 module.exports = router;
