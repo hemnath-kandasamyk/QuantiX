@@ -107,4 +107,43 @@ router.post('/:id/adjust', requireAdmin, async (req, res) => {
   res.json({ success: true, currentQuantity: newQty });
 });
 
+// PATCH /api/products/bulk - apply the same stock change to several
+// products at once (admin only). Body: { ids: string[], action: 'stock_add', value: number }
+router.patch('/bulk', requireAdmin, async (req, res) => {
+  const { StockAdjustment } = require('../models');
+  const { ids, action, value } = req.body;
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: 'ids must be a non-empty array' });
+  }
+  if (action !== 'stock_add') {
+    return res.status(400).json({ error: `Unsupported bulk action: ${action}` });
+  }
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return res.status(400).json({ error: 'value must be a number' });
+  }
+
+  const products = await Product.findAll({
+    where: { id: ids, retailerId: req.user.retailerId },
+    include: [{ model: Inventory }],
+  });
+
+  const updated = [];
+  for (const product of products) {
+    const inventory = product.Inventory;
+    if (!inventory) continue;
+    const newQty = Math.max(0, inventory.currentQuantity + value);
+    await inventory.update({ currentQuantity: newQty });
+    await StockAdjustment.create({
+      productId: product.id,
+      userId: req.user.userId,
+      quantityChange: value,
+      reason: 'Bulk stock update',
+    });
+    updated.push({ id: product.id, currentQuantity: newQty });
+  }
+
+  res.json({ success: true, updated });
+});
+
 module.exports = router;
