@@ -2,11 +2,8 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
-import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { Products } from './pages/Products';
 import { Billing } from './pages/Billing';
@@ -20,92 +17,26 @@ export default function App() {
     <BrowserRouter>
       <ToastProvider>
         <AuthProvider>
-          <Routes>
-            {/* Public Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+          <Layout>
+            <Routes>
 
-            {/* Protected Shop Application Routes */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Dashboard />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
+              {/* Home Page */}
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
 
-            <Route
-              path="/products"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Products />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
+              {/* Other Pages */}
+              <Route path="/products" element={<Products />} />
+              <Route path="/billing" element={<Billing />} />
+              <Route path="/sales" element={<SalesHistory />} />
+              <Route path="/alerts" element={<Alerts />} />
+              <Route path="/ai-assistant" element={<AIAssistant />} />
+              <Route path="/staff" element={<Staff />} />
 
-            <Route
-              path="/billing"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Billing />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
+              {/* Redirect Unknown Routes */}
+              <Route path="*" element={<Navigate to="/" replace />} />
 
-            <Route
-              path="/sales"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <SalesHistory />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/alerts"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Alerts />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/ai-assistant"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <AIAssistant />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/staff"
-              element={
-                <ProtectedRoute adminOnly>
-                  <Layout>
-                    <Staff />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Default Fallback */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
+            </Routes>
+          </Layout>
         </AuthProvider>
       </ToastProvider>
     </BrowserRouter>
