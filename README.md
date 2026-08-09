@@ -529,19 +529,3 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
 
 ---
 
-## 👤 Author
-
-<div align="center">
-
-**Hemnath KK**
-
-Final-year B.Tech, Artificial Intelligence & Data Science
-V.S.B. Engineering College, Karur, Tamil Nadu
-
-[![GitHub](https://img.shields.io/badge/GitHub-hemnath--kandasamyk-181717?logo=github&logoColor=white&style=for-the-badge)](https://github.com/hemnath-kandasamyk)
-
-<br/>
-
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=2,5,12,18&height=100&section=footer" width="100%"/>
-
-</div>
